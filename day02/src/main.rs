@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-fn report_is_safe(report: &Vec<i32>, remaining_item_removals: u32) -> bool {
+fn report_is_safe(report: &Vec<i32>, remaining_item_removals: usize) -> bool {
     let mut first_safe_change: Option<i32> = None;
     for i in 1..report.len() {
         let change = report[i] - report[i - 1];
@@ -37,7 +37,23 @@ fn report_is_safe(report: &Vec<i32>, remaining_item_removals: u32) -> bool {
                             report_without_prev.push(report[j]);
                         }
                     }
-                    return report_is_safe(&report_without_i, remaining_item_removals - 1) || report_is_safe(&report_without_prev, remaining_item_removals - 1);
+                    let is_safe_without_either_current = report_is_safe(&report_without_i, remaining_item_removals - 1) || report_is_safe(&report_without_prev, remaining_item_removals - 1);
+                    if i == 2 {
+                        // special case like this: 5 3 4 6 8
+                        // we will detect that something is wrong (directionality) when inspecting
+                        // the second and third items, but we will actually need to remove the FIRST
+                        // item to resolve the issue
+                        let mut report_without_earlier = Vec::new();
+                        for k in 0..report.len() {
+                            if k != i - 2 {
+                                report_without_earlier.push(report[k]);
+                            }
+                        }
+                        let is_safe_without_earlier = report_is_safe(&report_without_earlier, remaining_item_removals - 1);
+                        return is_safe_without_either_current || is_safe_without_earlier;
+                    } else {
+                        return is_safe_without_either_current;
+                    }
                 }
             }
         } else {
