@@ -2,11 +2,12 @@ use std::fs;
 use regex::Regex;
 
 fn main() {
-    solve_part_2();
+    let content = fs::read_to_string("resources/input.txt").unwrap();
+    solve_part_1(&content);
+    solve_part_2(&content);
 }
 
-fn solve_part_1() {
-    let content = fs::read_to_string("resources/input.txt").unwrap();
+fn solve_part_1(content: &str) {
     let re = Regex::new(r"mul\((\d+),(\d+)\)").unwrap();
     let matches = re.captures_iter(&content);
 
@@ -19,8 +20,7 @@ fn solve_part_1() {
     println!("Part 1 solution: {sum}");
 }
 
-fn solve_part_2() {
-    let content = fs::read_to_string("resources/input.txt").unwrap();
+fn solve_part_2(content: &str) {
     let re = Regex::new(r"mul\((\d+),(\d+)\)|do\(\)|don't\(\)").unwrap();
     let matches = re.captures_iter(&content);
 
