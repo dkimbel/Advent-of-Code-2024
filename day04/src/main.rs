@@ -23,6 +23,46 @@ fn main() {
         grid.push(chars);
     }
 
+    solve_part_1(&grid);
+    solve_part_2(&grid);
+}
+
+fn solve_part_2(grid: &Vec<Vec<char>>) {
+    let num_rows = grid.len();
+    let num_cols = grid[0].len();  // assume all rows have same length
+
+    let mut count = 0;
+    for y in 0..num_rows {
+        for x in 0..num_cols {
+            if is_center_of_x_mas(x, y, grid) {
+                count += 1;
+            }
+        }
+    }
+
+    println!("Part 2 solution: {count}");
+}
+
+fn is_center_of_x_mas(x: usize, y: usize, grid: &Vec<Vec<char>>) -> bool {
+    if grid[y][x] != 'A' {
+        return false;
+    }
+
+    // must be room on all sides
+    let max_y = grid.len() - 1;
+    let max_x = grid[0].len() - 1;
+    if x == 0 || x == max_x || y == 0 || y == max_y {
+        return false;
+    }
+
+    let upper_left_lower_right = (grid[y-1][x-1], grid[y+1][x+1]);
+    let upper_right_lower_left = (grid[y-1][x+1], grid[y+1][x-1]) ;
+
+    (upper_left_lower_right == ('M', 'S') || upper_left_lower_right == ('S', 'M')) &&
+        (upper_right_lower_left == ('M', 'S') || upper_right_lower_left == ('S', 'M'))
+}
+
+fn solve_part_1(grid: &Vec<Vec<char>>) {
     let num_rows = grid.len();
     let num_cols = grid[0].len();  // assume all rows have same length
 
