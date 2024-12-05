@@ -27,6 +27,7 @@ fn main() {
     }
 
     solve_part_1(&blockers_by_page_num, &updates);
+    solve_part_2(&blockers_by_page_num, &updates);
 }
 
 fn solve_part_1(blockers_by_page_num: &HashMap<i32, HashSet<i32>>, updates: &Vec<Vec<i32>>) {
@@ -37,6 +38,17 @@ fn solve_part_1(blockers_by_page_num: &HashMap<i32, HashSet<i32>>, updates: &Vec
         }
     }
     println!("Part 1 solution: {score}");
+}
+
+fn solve_part_2(blockers_by_page_num: &HashMap<i32, HashSet<i32>>, updates: &Vec<Vec<i32>>) {
+    let mut score = 0;
+    for update_seq in updates {
+        if !are_updates_valid(blockers_by_page_num, update_seq) {
+            let sorted_updates = sort_updates(blockers_by_page_num, update_seq);
+            score += get_score(&sorted_updates);
+        }
+    }
+    println!("Part 2 solution: {score}");
 }
 
 fn are_updates_valid(blockers_by_page_num: &HashMap<i32, HashSet<i32>>, updates: &Vec<i32>) -> bool {
@@ -57,4 +69,18 @@ fn are_updates_valid(blockers_by_page_num: &HashMap<i32, HashSet<i32>>, updates:
 fn get_score(updates: &Vec<i32>) -> i32 {
     // score is just middle item
     updates[updates.len() / 2]
+}
+
+fn sort_updates(blockers_by_page_num: &HashMap<i32, HashSet<i32>>, updates: &Vec<i32>) -> Vec<i32> {
+    let mut sorted = updates.clone();
+    sorted.sort_by(|a, b| {
+        let empty_default_hashset = HashSet::new();
+        let blockers_for_a = blockers_by_page_num.get(&a).unwrap_or(&empty_default_hashset);
+        if blockers_for_a.contains(&b) {
+            std::cmp::Ordering::Less
+        } else {
+            std::cmp::Ordering::Equal
+        }
+    });
+    sorted
 }
