@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -17,7 +18,7 @@ impl Tile {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 enum Direction {
     Up,
     Right,
@@ -46,7 +47,7 @@ impl Direction {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 struct GuardState {
     x: usize,
     y: usize,
@@ -54,7 +55,7 @@ struct GuardState {
 }
 
 impl GuardState {
-    fn next(self, board: &Board) -> Option<Self> {
+    fn next(self, board: &Board, extra_barrier_coords: Option<Coords>) -> Option<Self> {
         // return None if off-board
         let max_y = board.len() - 1;
         let max_x = board[0].len() - 1;
@@ -94,7 +95,11 @@ impl GuardState {
             None
         } else {
             let (intended_x, intended_y) = intended_next_coords.unwrap();
-            let intended_tile = &board[intended_y][intended_x];
+            let intended_tile = if Some((intended_x, intended_y)) == extra_barrier_coords {
+                &Tile::Barrier
+            } else {
+                &board[intended_y][intended_x]
+            };
             match intended_tile {
                 Tile::Empty => Some(Self {
                     direction: self.direction,
@@ -112,6 +117,7 @@ impl GuardState {
 }
 
 type Board = Vec<Vec<Tile>>;
+type Coords = (usize, usize);
 
 struct BoardLayout {
     board: Board,
@@ -157,25 +163,46 @@ impl BoardLayout {
     }
 }
 
-fn solve_part_1(board_layout: &BoardLayout) {
+fn get_visited_coords(board_layout: &BoardLayout) -> HashSet<(usize, usize)> {
     let num_rows = board_layout.board.len();
     let num_cols = board_layout.board[0].len();
-    let mut visited: Vec<Vec<bool>> = vec![vec![false; num_cols]; num_rows];
+    let mut visited: HashSet<(usize, usize)> = HashSet::new();
 
     let mut maybe_guard_state: Option<GuardState> = Some(board_layout.initial_guard_state);
     while let Some(guard_state) = maybe_guard_state  {
-        visited[guard_state.y][guard_state.x] = true;
-        maybe_guard_state = guard_state.next(&board_layout.board);
+        visited.insert((guard_state.x, guard_state.y));
+        maybe_guard_state = guard_state.next(&board_layout.board, None);
     }
-    let num_tiles_visited = visited.iter().map(|row| row.iter().map(|bool| match bool {
-        false => 0,
-        true => 1,
-    }).sum::<i32>()).sum::<i32>();
+    visited
+}
 
-    println!("Part 1 solution: {num_tiles_visited}");
+fn would_cause_loop(board_layout: &BoardLayout, extra_barrier_coords: Coords) -> bool {
+    // If we see the same exact guard state twice -- same coords AND direction -- we consider
+    // that evidence that the guard is traveling in a loop.
+    let mut seen_guard_states: HashSet<GuardState> = HashSet::new();
+    let mut maybe_guard_state = Some(board_layout.initial_guard_state);
+    while let Some(guard_state) = maybe_guard_state {
+        if seen_guard_states.contains(&guard_state) {
+            return true;
+        }
+        seen_guard_states.insert(guard_state);
+        maybe_guard_state = guard_state.next(&board_layout.board, Some(extra_barrier_coords));
+    }
+    false
 }
 
 fn main() {
     let board_layout = BoardLayout::from_file_path("resources/input.txt");
-    solve_part_1(&board_layout);
+    let mut visited_coords = get_visited_coords(&board_layout);
+    let num_tiles_visited = visited_coords.len();
+    println!("Part 1 solution: {num_tiles_visited}");
+
+    // From here on out, we're using visited_coords as prospective locations for an extra barrier.
+    // However, an extra barrier is forbidden at the starting location.
+    visited_coords.remove(&(board_layout.initial_guard_state.x, board_layout.initial_guard_state.y));
+    let num_loopable_barrier_locations = visited_coords.iter()
+        .map(|coords| would_cause_loop(&board_layout, *coords))
+        .map(|bool| if bool { 1 } else { 0 })
+        .sum::<i32>();
+    println!("Part 2 solution: {num_loopable_barrier_locations}");
 }
