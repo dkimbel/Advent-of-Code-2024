@@ -4,6 +4,7 @@ use std::io::{BufRead, BufReader};
 #[derive(Copy, Clone)]
 enum Operation {
     ADD,
+    CONCAT,
     MULTIPLY,
 }
 
@@ -34,6 +35,7 @@ impl Equation {
             let new_term = remaining_terms[0];
             let new_curr = match curr_op {
                 Operation::ADD => curr + new_term,
+                Operation::CONCAT => format!("{curr}{new_term}").parse::<i64>().unwrap(),
                 Operation::MULTIPLY => curr * new_term,
             };
 
@@ -60,4 +62,11 @@ fn main() {
         .sum::<i64>();
 
     println!("Part 1 solution: {score}");
+
+    let alt_score = equations.iter()
+        .filter(|eq| eq.can_be_solved_with_operations(&[Operation::ADD, Operation::MULTIPLY, Operation::CONCAT]))
+        .map(|eq| eq.result)
+        .sum::<i64>();
+
+    println!("Part 2 solution: {alt_score}");
 }
