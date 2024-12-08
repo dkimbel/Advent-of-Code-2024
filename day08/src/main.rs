@@ -5,6 +5,16 @@ use std::io::{BufRead, BufReader};
 
 type Coords = (usize, usize);
 
+enum X_POSITION {
+    LEFT,
+    RIGHT
+}
+
+enum Y_POSITION {
+    TOP,
+    BOTTOM
+}
+
 fn main() {
     let file = File::open("resources/input.txt").unwrap();
     let reader = BufReader::new(file);
@@ -25,7 +35,9 @@ fn main() {
 
     let max_x = max_x as i32;
     let max_y = max_y as i32;
-    let mut antinodes: HashSet<Coords> = HashSet::new();
+
+    let mut part_1_antinodes: HashSet<Coords> = HashSet::new();
+    let mut part_2_antinodes: HashSet<Coords> = HashSet::new();
     for antenna_type in antenna_type_to_coords.keys() {
         let coords = &antenna_type_to_coords[antenna_type];
         // check every pair of coords for antinodes
@@ -38,32 +50,47 @@ fn main() {
                 if (x1, y1) != (x2, y2) {
                     let diff_x = x2 - x1;
                     let diff_y = y2 - y1;
-                    let anti_small_x = cmp::min(x1, x2) - diff_x.abs();
-                    let anti_large_x = cmp::max(x1, x2) + diff_x.abs();
-                    let anti_small_y = cmp::min(y1, y2) - diff_y.abs();
-                    let anti_large_y = cmp::max(y1, y2) + diff_y.abs();
-                    // figure out pairings of small/large x/y
-                    let (anti_1_x, anti_2_x) = if x1 > x2 {
-                        (anti_large_x, anti_small_x)
+                    let (x1_pos, x2_pos) = if x1 > x2 {
+                        (X_POSITION::RIGHT, X_POSITION::LEFT)
                     } else {
-                        (anti_small_x, anti_large_x)
+                        (X_POSITION::LEFT, X_POSITION::RIGHT)
                     };
-                    let (anti_1_y, anti_2_y) = if y1 > y2 {
-                        (anti_large_y, anti_small_y)
+                    let (y1_pos, y2_pos) = if y1 > y2 {
+                        (Y_POSITION::BOTTOM, Y_POSITION::TOP)
                     } else {
-                        (anti_small_y, anti_large_y)
+                        (Y_POSITION::TOP, Y_POSITION::BOTTOM)
                     };
-                    if anti_1_x >= 0 && anti_1_x <= max_x && anti_1_y >= 0 && anti_1_y <= max_y {
-                        antinodes.insert((anti_1_x as usize, anti_1_y as usize));
-                    }
-                    if anti_2_x >= 0 && anti_2_x <= max_x && anti_2_y >= 0 && anti_2_y <= max_y {
-                        antinodes.insert((anti_2_x as usize, anti_2_y as usize));
-                    }
+                    add_coords(x1, y1, max_x, max_y, diff_x.abs(), diff_y.abs(), x1_pos, y1_pos, &mut part_1_antinodes, &mut part_2_antinodes);
+                    add_coords(x2, y2, max_x, max_y, diff_x.abs(), diff_y.abs(), x2_pos, y2_pos, &mut part_1_antinodes, &mut part_2_antinodes);
                 }
             }
         }
     }
 
-    let num_antinodes = antinodes.len();
-    println!("Part 1 solution: {num_antinodes}");
+    let num_part_1_antinodes = part_1_antinodes.len();
+    println!("Part 1 solution: {num_part_1_antinodes}");
+
+    let num_part_2_antinodes = part_2_antinodes.len();
+    println!("Part 2 solution: {num_part_2_antinodes}");
+}
+
+fn add_coords(x: i32, y: i32, max_x: i32, max_y: i32, diff_x_abs: i32, diff_y_abs: i32, x_pos: X_POSITION, y_pos: Y_POSITION, part_1_antinodes: &mut HashSet<Coords>, part_2_antinodes: &mut HashSet<Coords>) -> () {
+    let mut iters = 0;
+    let mut new_x = x;
+    let mut new_y = y;
+    while (new_x >= 0 && new_x <= max_x && new_y >= 0 && new_y <= max_y) {
+        part_2_antinodes.insert((new_x as usize, new_y as usize));
+        if (iters == 1) {
+            part_1_antinodes.insert((new_x as usize, new_y as usize));
+        }
+        iters += 1;
+        new_x = match x_pos {
+            X_POSITION::RIGHT => new_x + diff_x_abs,
+            X_POSITION::LEFT => new_x - diff_x_abs,
+        };
+        new_y = match y_pos {
+            Y_POSITION::TOP => new_y - diff_y_abs,
+            Y_POSITION::BOTTOM => new_y + diff_y_abs,
+        }
+    }
 }
