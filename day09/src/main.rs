@@ -89,6 +89,8 @@ fn main() {
     for whole_file_block in whole_file_blocks {
         let maybe_i = get_start_index_of_first_free_block_of_at_least_size(&part_2_compacted_blocks, whole_file_block.size);
         if let Some(free_start_i) = maybe_i {
+            // TODO optimization: this 'max allowable index' should be passed to
+            //   get_start_index_of_first_free_block_of_at_least_size so it can short-circuit
             if free_start_i > whole_file_block.start_index {
                 continue;
             }
